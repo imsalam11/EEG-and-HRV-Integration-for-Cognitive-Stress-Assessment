@@ -1,47 +1,79 @@
-# Install if not already installed
-# install.packages("ggplot2")
-library(ggplot2)
-install.packages("tidyr")
-install.packages("dplyr")  # if not installed yet, needed for pivot_longer
-# 2. Load libraries
-library(ggplot2)
-library(tidyr)
-library(dplyr)
-# 3. Load your data
-# Make sure your file is in the working directory or provide full path
-data <- read.csv("data.csv")
-# 4. Convert data to long format for ggplot
-data_long <- data %>%
-  pivot_longer(cols = c(EEG_TAR, ECG_HR, ECG_LFHF),
-               names_to = "Variable",
-               values_to = "Value")
-# 5. Create boxplot
-ggplot(data_long, aes(x = Variable, y = Value, fill = Variable)) +
-  geom_boxplot(outlier.colour = "red", outlier.shape = 16, outlier.size = 2) +
-  labs(title = "Boxplots of TAR, HR, and LF/HF",
-       x = "Variable",
-       y = "Value") +
-  theme_minimal() +
-  theme(legend.position = "none")
-  # Load your data
-data <- read.csv("data.csv")
+# Load required libraries
+library(jmv)
+library(GAMLj3)
 
-# Boxplot for TAR
-boxplot(data$EEG_TAR,
-        main = "Boxplot of TAR",
-        ylab = "TAR",
-        col = "skyblue",
-        outline = TRUE)
-        # Boxplot for HR
-boxplot(data$ECG_HR,
-        main = "Boxplot of HR",
-        ylab = "HR",
-        col = "lightgreen",
-        outline = TRUE)
+# Load data
+# replace "data.csv" with your real filename if needed
+# data <- read.csv("data.csv")
 
-# Boxplot for LF/HF
-boxplot(data$ECG_LFHF,
-        main = "Boxplot of LF/HF",
-        ylab = "LF/HF",
-        col = "salmon",
-        outline = TRUE)
+
+# -------------------------------
+# Descriptive statistics (TAR, HR, LF/HF)
+# -------------------------------
+jmv::descriptives(
+  formula = TAR + HR + `LF/HF` ~ Segment,
+  data = data,
+  desc = "rows",
+  box = TRUE,
+  se = TRUE,
+  ci = TRUE,
+  sw = TRUE
+)
+
+
+# -------------------------------
+# Repeated measures ANOVA
+# -------------------------------
+jmv::anovaRM(
+  data = data,
+  rm = list(
+    list(
+      label = "RM Factor 1",
+      levels = c("Level 1", "Level 2", "Level 3")
+    )
+  ),
+  rmCells = list(
+    list(measure = "TAR",   cell = "Level 1"),
+    list(measure = "HR",    cell = "Level 2"),
+    list(measure = "LF/HF", cell = "Level 3")
+  ),
+  bs = Segment,
+  effectSize = "partEta",
+  rmTerms = ~ `RM Factor 1`,
+  bsTerms = ~ Segment,
+  spherTests = TRUE,
+  spherCorr = "GG",
+  postHoc = list("Segment"),
+  postHocCorr = c("bonf", "holm")
+)
+
+
+# -------------------------------
+# Mixed Model: HR ~ TAR + (random Subject effect)
+# -------------------------------
+GAMLj3::gamljmixed(
+  formula = HR ~ 1 + TAR + (1 + TAR | SubjectNo),
+  data = data,
+  emmeans = ~ TAR,
+  plot_x = TAR,
+  plot_xoriginal = TRUE,
+  re_ci = TRUE,
+  plot_re_method = 'full',
+  norm_test = TRUE,
+  qq_plot = TRUE
+)
+
+
+# -------------------------------
+# Mixed Model: LF/HF ~ TAR + (random Subject effect)
+# -------------------------------
+GAMLj3::gamljmixed(
+  formula = `LF/HF` ~ 1 + TAR + (1 + TAR | SubjectNo),
+  data = data,
+  emmeans = ~ TAR,
+  plot_x = TAR,
+  re_ci = TRUE,
+  plot_re_method = 'full',
+  norm_test = TRUE,
+  qq_plot = TRUE
+)
