@@ -1,0 +1,79 @@
+# Load required libraries
+library(jmv)
+library(GAMLj3)
+
+# Load data
+# replace "data.csv" with your real filename if needed
+# data <- read.csv("data.csv")
+
+
+# -------------------------------
+# Descriptive statistics (TAR, HR, LF/HF)
+# -------------------------------
+jmv::descriptives(
+  formula = TAR + HR + `LF/HF` ~ Segment,
+  data = data,
+  desc = "rows",
+  box = TRUE,
+  se = TRUE,
+  ci = TRUE,
+  sw = TRUE
+)
+
+
+# -------------------------------
+# Repeated measures ANOVA
+# -------------------------------
+jmv::anovaRM(
+  data = data,
+  rm = list(
+    list(
+      label = "RM Factor 1",
+      levels = c("Level 1", "Level 2", "Level 3")
+    )
+  ),
+  rmCells = list(
+    list(measure = "TAR",   cell = "Level 1"),
+    list(measure = "HR",    cell = "Level 2"),
+    list(measure = "LF/HF", cell = "Level 3")
+  ),
+  bs = Segment,
+  effectSize = "partEta",
+  rmTerms = ~ `RM Factor 1`,
+  bsTerms = ~ Segment,
+  spherTests = TRUE,
+  spherCorr = "GG",
+  postHoc = list("Segment"),
+  postHocCorr = c("bonf", "holm")
+)
+
+
+# -------------------------------
+# Mixed Model: HR ~ TAR + (random Subject effect)
+# -------------------------------
+GAMLj3::gamljmixed(
+  formula = HR ~ 1 + TAR + (1 + TAR | SubjectNo),
+  data = data,
+  emmeans = ~ TAR,
+  plot_x = TAR,
+  plot_xoriginal = TRUE,
+  re_ci = TRUE,
+  plot_re_method = 'full',
+  norm_test = TRUE,
+  qq_plot = TRUE
+)
+
+
+# -------------------------------
+# Mixed Model: LF/HF ~ TAR + (random Subject effect)
+# -------------------------------
+GAMLj3::gamljmixed(
+  formula = `LF/HF` ~ 1 + TAR + (1 + TAR | SubjectNo),
+  data = data,
+  emmeans = ~ TAR,
+  plot_x = TAR,
+  re_ci = TRUE,
+  plot_re_method = 'full',
+  norm_test = TRUE,
+  qq_plot = TRUE
+)
