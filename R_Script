@@ -1,0 +1,47 @@
+# Install if not already installed
+# install.packages("ggplot2")
+library(ggplot2)
+install.packages("tidyr")
+install.packages("dplyr")  # if not installed yet, needed for pivot_longer
+# 2. Load libraries
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+# 3. Load your data
+# Make sure your file is in the working directory or provide full path
+data <- read.csv("data.csv")
+# 4. Convert data to long format for ggplot
+data_long <- data %>%
+  pivot_longer(cols = c(EEG_TAR, ECG_HR, ECG_LFHF),
+               names_to = "Variable",
+               values_to = "Value")
+# 5. Create boxplot
+ggplot(data_long, aes(x = Variable, y = Value, fill = Variable)) +
+  geom_boxplot(outlier.colour = "red", outlier.shape = 16, outlier.size = 2) +
+  labs(title = "Boxplots of TAR, HR, and LF/HF",
+       x = "Variable",
+       y = "Value") +
+  theme_minimal() +
+  theme(legend.position = "none")
+  # Load your data
+data <- read.csv("data.csv")
+
+# Boxplot for TAR
+boxplot(data$EEG_TAR,
+        main = "Boxplot of TAR",
+        ylab = "TAR",
+        col = "skyblue",
+        outline = TRUE)
+        # Boxplot for HR
+boxplot(data$ECG_HR,
+        main = "Boxplot of HR",
+        ylab = "HR",
+        col = "lightgreen",
+        outline = TRUE)
+
+# Boxplot for LF/HF
+boxplot(data$ECG_LFHF,
+        main = "Boxplot of LF/HF",
+        ylab = "LF/HF",
+        col = "salmon",
+        outline = TRUE)
